@@ -4,11 +4,6 @@ A simple desktop tool that scans a folder (and all nested sub-folders), then mov
 
 The app gives you a straightforward interface to pick folders, view progress, pause or stop processing, and see a summary when everything is finished.
 
-## What you need
-
-- **Windows or macOS computer** with a recent version of Python installed (Python 3.10 or later). Python is only required to run or build the app. The build step produces standalone executables that do **not** need Python.
-- About 200 MB of free disk space for the temporary build files.
-
 ## Downloading the project
 
 1. Click the green **Code** button on the GitHub page and choose **Download ZIP**.
