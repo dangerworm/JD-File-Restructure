@@ -74,7 +74,7 @@ class FileFlattenerApp:
 
         self.date_radio = ttk.Radiobutton(
             naming_frame,
-            text="date (YY.MM.DD)",
+            text="date (YYYY.MM.DD)",
             variable=self.date_format_var,
             value="date",
             command=self._on_date_format_change,
@@ -83,7 +83,7 @@ class FileFlattenerApp:
 
         self.datetime_radio = ttk.Radiobutton(
             naming_frame,
-            text="date and time (YY.MM.DD.HH.MM.SS)",
+            text="date and time (YYYY.MM.DD.HH.MM.SS)",
             variable=self.date_format_var,
             value="datetime",
             command=self._on_date_format_change,
