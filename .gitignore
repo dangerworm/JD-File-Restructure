@@ -14,8 +14,10 @@ env/
 .coverage
 htmlcov/
 
-# PyInstaller build directory (keep dist/ to ship the packaged app)
+# PyInstaller build directory and files
 build/
+dist/FileExtractor-win
+FileExtractor-win.spec
 
 # Package metadata
 *.egg-info/

@@ -36,7 +36,7 @@ def build() -> None:
         shutil.rmtree(BUILD_DIR)
 
     name_suffix = "win" if platform.system() == "Windows" else "mac"
-    executable_name = f"HomeStudentExtractor-{name_suffix}"
+    executable_name = f"FileExtractor-{name_suffix}"
 
     cmd = [
         sys.executable,
@@ -54,7 +54,7 @@ def build() -> None:
     print("Running:", " ".join(cmd))
     subprocess.check_call(cmd)
 
-    archive_base = DIST_DIR / executable_name
+    archive_base = ROOT / f"FileExtractor-{name_suffix}"
     archive_path = archive_base.with_suffix(".zip")
     if archive_path.exists():
         archive_path.unlink()
