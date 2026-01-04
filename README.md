@@ -1,8 +1,10 @@
 # File Extractor
 
-A simple desktop tool that scans a folder (and all nested sub-folders), then moves every file into
+A simple desktop tool that scans a folder (and all nested sub-folders), then copies every file into
 a single output folder using a naming format you choose, e.g.
-`YYYY.MM.DD.HH.MM.SS - <original filename>.<extension>` when dates are enabled. The recorded date is taken from the file's creation time (falling back to the last modified time if creation time is unavailable).
+`YYYY.MM.DD.HH.MM.SS - <original filename>.<extension>` when dates are enabled. The recorded date is
+taken from the file's creation time (falling back to the last modified time if creation time is
+unavailable).
 
 The app gives you a straightforward interface to pick folders, set naming options, view progress,
 pause or stop processing, and see a summary when everything is finished. Folder choices and naming
@@ -27,7 +29,7 @@ If you are a developer, technical details are [below](#developers).
 1. In the window that opens:
    - Click **Choose...** next to **Root folder to search** and pick the top-level folder that holds
      the files you want to collect.
-   - Click **Choose...** next to **Output folder** and pick where the files should be moved.
+   - Click **Choose...** next to **Output folder** and pick where the files should be copied to.
    - Pick your naming options:
      - Leave **Prefix filename with recorded file date** checked to add the date to each filename,
        then choose **date (YYYY.MM.DD)** or **date and time (YYYY.MM.DD.HH.MM.SS)**.
@@ -49,7 +51,7 @@ If you are a developer, technical details are [below](#developers).
      estimated time remaining. After you click **Begin** the status area also shows **Files found**,
      **Estimated time remaining**, and the run summary.
 
-4. When finished, a **summary** appears listing how many files were found, moved, and whether any
+4. When finished, a **summary** appears listing how many files were found, copied, and whether any
    errors occurred. The buttons are re-enabled so you can run again if needed.
 
 ### Notes and tips
@@ -58,8 +60,7 @@ If you are a developer, technical details are [below](#developers).
   time is unavailable, it falls back to the last modified time.
 - If a filename already exists in the output folder, the app automatically adds `_1`, `_2`, etc. to
   keep every file.
-- The app moves files (it does not leave copies in the original locations). If you prefer to keep
-  the originals, make a backup of the root folder before running.
+- The app copies files (it does not leave delete files from their original locations).
 - The app remembers your folder selections and naming preferences on this computer for the next run.
 
 ### Troubleshooting

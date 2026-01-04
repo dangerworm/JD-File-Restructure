@@ -440,7 +440,7 @@ class FileFlattenerApp:
         summary = [
             "Processing finished.",
             f"Total files discovered: {self.total_files}",
-            f"Successfully moved: {self.processed_files}",
+            f"Successfully copied: {self.processed_files}",
             f"Errors: {len(self.error_files)}",
         ]
         if errors_text:
