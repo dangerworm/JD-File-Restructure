@@ -1,3 +1,4 @@
+import json
 import os
 import queue
 import shutil
@@ -13,8 +14,9 @@ class FileFlattenerApp:
     def __init__(self, master: tk.Tk) -> None:
         self.master = master
         self.master.title("File Extractor")
-        self.master.geometry("720x420")
+        self.master.geometry("780x520")
 
+        self.config_path = Path.home() / ".file_extractor_settings.json"
         self.root_dir: Path | None = None
         self.output_dir: Path | None = None
         self.files_to_process: list[Path] = []
@@ -30,25 +32,70 @@ class FileFlattenerApp:
         self.error_files: list[tuple[Path, str]] = []
         self.search_start_time: float | None = None
         self.process_start_time: float | None = None
+        self.has_started = False
 
+        self.root_var = tk.StringVar()
+        self.output_var = tk.StringVar()
+        self.prefix_date_var = tk.BooleanVar(value=True)
+        self.date_format_var = tk.StringVar(value="date")
+        self.affix_var = tk.StringVar(value=" - ")
+        self.example_name_var = tk.StringVar(value="")
+
+        self._load_settings()
         self._build_ui()
+        self._on_prefix_toggle()
+        self._update_example_name()
         self._poll_queue()
 
     def _build_ui(self) -> None:
         padding = {"padx": 10, "pady": 5}
 
-        path_frame = ttk.Frame(self.master)
-        path_frame.pack(fill=tk.X, **padding)
+        folders_frame = ttk.LabelFrame(self.master, text="Folders")
+        folders_frame.pack(fill=tk.X, **padding)
 
-        ttk.Label(path_frame, text="Root folder to search:").grid(row=0, column=0, sticky=tk.W)
-        self.root_var = tk.StringVar()
-        ttk.Entry(path_frame, textvariable=self.root_var, width=60, state="readonly").grid(row=0, column=1, sticky=tk.W, padx=(5, 5))
-        ttk.Button(path_frame, text="Choose...", command=self._select_root).grid(row=0, column=2, sticky=tk.W)
+        ttk.Label(folders_frame, text="Root folder to search:").grid(row=0, column=0, sticky=tk.W)
+        ttk.Entry(folders_frame, textvariable=self.root_var, width=60, state="readonly").grid(row=0, column=1, sticky=tk.W, padx=(5, 5))
+        ttk.Button(folders_frame, text="Choose...", command=self._select_root).grid(row=0, column=2, sticky=tk.W)
 
-        ttk.Label(path_frame, text="Output folder:").grid(row=1, column=0, sticky=tk.W)
-        self.output_var = tk.StringVar()
-        ttk.Entry(path_frame, textvariable=self.output_var, width=60, state="readonly").grid(row=1, column=1, sticky=tk.W, padx=(5, 5))
-        ttk.Button(path_frame, text="Choose...", command=self._select_output).grid(row=1, column=2, sticky=tk.W)
+        ttk.Label(folders_frame, text="Output folder:").grid(row=1, column=0, sticky=tk.W)
+        ttk.Entry(folders_frame, textvariable=self.output_var, width=60, state="readonly").grid(row=1, column=1, sticky=tk.W, padx=(5, 5))
+        ttk.Button(folders_frame, text="Choose...", command=self._select_output).grid(row=1, column=2, sticky=tk.W)
+
+        naming_frame = ttk.LabelFrame(self.master, text="Naming options")
+        naming_frame.pack(fill=tk.X, **padding)
+
+        self.prefix_checkbox = ttk.Checkbutton(
+            naming_frame,
+            text="Prefix filename with recorded file date",
+            variable=self.prefix_date_var,
+            command=self._on_prefix_toggle,
+        )
+        self.prefix_checkbox.grid(row=0, column=0, columnspan=2, sticky=tk.W)
+
+        self.date_radio = ttk.Radiobutton(
+            naming_frame,
+            text="date (YY.MM.DD)",
+            variable=self.date_format_var,
+            value="date",
+            command=self._on_date_format_change,
+        )
+        self.date_radio.grid(row=1, column=0, sticky=tk.W, padx=(20, 10))
+
+        self.datetime_radio = ttk.Radiobutton(
+            naming_frame,
+            text="date and time (YY.MM.DD.HH.MM.SS)",
+            variable=self.date_format_var,
+            value="datetime",
+            command=self._on_date_format_change,
+        )
+        self.datetime_radio.grid(row=1, column=1, sticky=tk.W)
+
+        ttk.Label(naming_frame, text="Affix between date and name:").grid(row=2, column=0, sticky=tk.W, padx=(0, 5), pady=(5, 0))
+        self.affix_entry = ttk.Entry(naming_frame, textvariable=self.affix_var, width=20)
+        self.affix_entry.grid(row=2, column=1, sticky=tk.W, pady=(5, 0))
+        self.affix_var.trace_add("write", lambda *_: self._on_affix_change())
+
+        ttk.Label(naming_frame, textvariable=self.example_name_var, foreground="#444").grid(row=3, column=0, columnspan=2, sticky=tk.W, pady=(5, 0))
 
         control_frame = ttk.Frame(self.master)
         control_frame.pack(fill=tk.X, **padding)
@@ -71,20 +118,18 @@ class FileFlattenerApp:
         self.progress_label_var = tk.StringVar(value="Waiting to start")
         ttk.Label(progress_frame, textvariable=self.progress_label_var).grid(row=0, column=1, sticky=tk.W, padx=(10, 0))
 
-        timing_frame = ttk.Frame(self.master)
-        timing_frame.pack(fill=tk.X, **padding)
-
-        self.eta_var = tk.StringVar(value="Estimated time remaining: -")
-        ttk.Label(timing_frame, textvariable=self.eta_var).grid(row=0, column=0, sticky=tk.W)
+        self.status_frame = ttk.LabelFrame(self.master, text="Status")
+        status_inner = ttk.Frame(self.status_frame)
+        status_inner.pack(fill=tk.X, **padding)
 
         self.search_count_var = tk.StringVar(value="Files found: 0")
-        ttk.Label(timing_frame, textvariable=self.search_count_var).grid(row=1, column=0, sticky=tk.W)
+        ttk.Label(status_inner, textvariable=self.search_count_var).grid(row=0, column=0, sticky=tk.W)
 
-        summary_frame = ttk.LabelFrame(self.master, text="Summary")
-        summary_frame.pack(fill=tk.BOTH, expand=True, **padding)
+        self.eta_var = tk.StringVar(value="Estimated time remaining: -")
+        ttk.Label(status_inner, textvariable=self.eta_var).grid(row=1, column=0, sticky=tk.W, pady=(2, 0))
 
-        self.summary_text = tk.Text(summary_frame, height=10, wrap=tk.WORD, state=tk.DISABLED)
-        self.summary_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.summary_text = tk.Text(self.status_frame, height=10, wrap=tk.WORD, state=tk.DISABLED)
+        self.summary_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=(0, 5))
 
     def _log_summary(self, message: str) -> None:
         self.summary_text.configure(state=tk.NORMAL)
@@ -92,17 +137,76 @@ class FileFlattenerApp:
         self.summary_text.see(tk.END)
         self.summary_text.configure(state=tk.DISABLED)
 
+    def _load_settings(self) -> None:
+        if not self.config_path.exists():
+            return
+        try:
+            data = json.loads(self.config_path.read_text())
+        except (json.JSONDecodeError, OSError):
+            return
+
+        root = data.get("root_dir")
+        if root:
+            self.root_dir = Path(root)
+            self.root_var.set(str(self.root_dir))
+
+        output = data.get("output_dir")
+        if output:
+            self.output_dir = Path(output)
+            self.output_var.set(str(self.output_dir))
+
+        self.prefix_date_var.set(bool(data.get("prefix_date", True)))
+        self.date_format_var.set(data.get("date_format", "date"))
+        self.affix_var.set(data.get("affix_text", " - "))
+
+    def _save_settings(self) -> None:
+        payload = {
+            "root_dir": str(self.root_dir) if self.root_dir else "",
+            "output_dir": str(self.output_dir) if self.output_dir else "",
+            "prefix_date": self.prefix_date_var.get(),
+            "date_format": self.date_format_var.get(),
+            "affix_text": self.affix_var.get(),
+        }
+        try:
+            self.config_path.write_text(json.dumps(payload, indent=2))
+        except OSError:
+            pass
+
+    def _show_status_container(self) -> None:
+        if self.status_frame and not self.status_frame.winfo_ismapped():
+            self.status_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+
     def _select_root(self) -> None:
         path = filedialog.askdirectory(title="Select the folder to search")
         if path:
             self.root_dir = Path(path)
             self.root_var.set(str(self.root_dir))
+            self._save_settings()
 
     def _select_output(self) -> None:
         path = filedialog.askdirectory(title="Select the output folder")
         if path:
             self.output_dir = Path(path)
             self.output_var.set(str(self.output_dir))
+            self._save_settings()
+
+    def _on_prefix_toggle(self) -> None:
+        if self.prefix_date_var.get():
+            self.date_radio.state(["!disabled"])
+            self.datetime_radio.state(["!disabled"])
+        else:
+            self.date_radio.state(["disabled"])
+            self.datetime_radio.state(["disabled"])
+        self._update_example_name()
+        self._save_settings()
+
+    def _on_date_format_change(self) -> None:
+        self._update_example_name()
+        self._save_settings()
+
+    def _on_affix_change(self) -> None:
+        self._update_example_name()
+        self._save_settings()
 
     def _toggle_pause(self) -> None:
         if not self.is_running:
@@ -127,6 +231,9 @@ class FileFlattenerApp:
         if not self.root_dir or not self.output_dir:
             messagebox.showwarning("Missing folders", "Please choose both the root folder and the output folder.")
             return
+
+        self.has_started = True
+        self._show_status_container()
 
         self.summary_text.configure(state=tk.NORMAL)
         self.summary_text.delete("1.0", tk.END)
@@ -251,11 +358,28 @@ class FileFlattenerApp:
             created_time = file_path.stat().st_mtime
         return datetime.fromtimestamp(created_time)
 
+    def _update_example_name(self) -> None:
+        sample_timestamp = datetime(2024, 1, 2, 3, 4, 5)
+        base_name = "example"
+        extension = ".txt"
+        affix = self.affix_var.get()
+        if self.prefix_date_var.get():
+            date_format = "%Y.%m.%d" if self.date_format_var.get() == "date" else "%Y.%m.%d.%H.%M.%S"
+            date_str = sample_timestamp.strftime(date_format)
+            example = f"{date_str}{affix}{base_name}{extension}"
+        else:
+            example = f"{base_name}{extension}"
+        self.example_name_var.set(f"Example: {example}")
+
     def _build_new_name(self, file_path: Path, timestamp: datetime) -> str:
-        date_str = timestamp.strftime("%Y.%m.%d.%H.%M.%S")
         base_name = file_path.stem
         extension = file_path.suffix
-        return f"{date_str}_HOMEi_HomeiStudent, {base_name}{extension}"
+        affix = self.affix_var.get()
+        if self.prefix_date_var.get():
+            date_format = "%Y.%m.%d" if self.date_format_var.get() == "date" else "%Y.%m.%d.%H.%M.%S"
+            date_str = timestamp.strftime(date_format)
+            return f"{date_str}{affix}{base_name}{extension}"
+        return f"{base_name}{extension}"
 
     def _ensure_unique(self, destination: Path) -> Path:
         counter = 1
