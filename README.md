@@ -1,6 +1,6 @@
-# Home Student File Extractor
+# File Extractor
 
-A simple desktop tool that scans a folder (and all nested sub-folders), then moves every file into a single output folder using the naming format `YYYY.MM.DD_HOMEi_HomeiStudent, <original filename>.<extension>`. The recorded date is taken from the file's creation time (falling back to the last modified time if creation time is unavailable).
+A simple desktop tool that scans a folder (and all nested sub-folders), then moves every file into a single output folder using the naming format `YYYY.MM.DD.HH.MM.SS_HOMEi_HomeiStudent, <original filename>.<extension>`. The recorded date is taken from the file's creation time (falling back to the last modified time if creation time is unavailable).
 
 The app gives you a straightforward interface to pick folders, view progress, pause or stop processing, and see a summary when everything is finished.
 
@@ -22,7 +22,7 @@ This approach uses the Python file directly. It is the quickest way to try the a
 
 1. Open the project folder you extracted earlier.
 2. Double-click `main.py` inside the `app` folder. On some systems you may need to right-click and choose **Open With → Python**.
-3. The Home Student File Extractor window appears.
+3. The File Extractor window appears.
 4. Follow the on-screen steps described in [Using the app](#using-the-app).
 
 > Tip: If double-clicking `main.py` does not open the app, open a terminal/command prompt, type `python app/main.py`, and press **Enter**. The next sections include step-by-step terminal instructions.
@@ -34,12 +34,16 @@ Building creates an application you can keep or share that runs without installi
 ### One-time setup
 
 1. Make sure Python is installed. If you are unsure, open a terminal (Command Prompt on Windows, Terminal on macOS) and type:
-   ```
+2. Install libraries
+
+   ```bash
    python --version
    ```
+
    If a version number appears (e.g., `Python 3.11.0`), you are ready. If you see an error, install Python from [python.org](https://www.python.org/downloads/), then reopen the terminal and try again.
-2. Install the build tool (PyInstaller). In the same terminal, run:
-   ```
+3. Install the build tool (PyInstaller). In the same terminal, run:
+
+   ```bash
    python -m pip install -r requirements.txt
    ```
 
@@ -47,26 +51,34 @@ Building creates an application you can keep or share that runs without installi
 
 1. Open **Command Prompt**.
 2. Change to the project folder. Replace `C:\Users\you\Downloads\JD-File-Restructure` with the actual path where you extracted the project:
-   ```
+
+   ```bash
    cd C:\Users\you\Downloads\JD-File-Restructure
    ```
+
 3. Run the build script:
-   ```
+
+   ```bash
    python build.py
    ```
+
 4. When the command completes, open the `dist` folder inside the project. You will see a folder named `HomeStudentExtractor-win` that contains the executable file. Copy this folder anywhere you like and double-click the executable to run it.
 
 ### Build on macOS
 
 1. Open **Terminal** (Applications → Utilities → Terminal).
 2. Change to the project folder (update the path to match where you extracted the files):
-   ```
+
+   ```bash
    cd ~/Downloads/JD-File-Restructure
    ```
+
 3. Run the build script:
-   ```
+
+   ```bash
    python build.py
    ```
+
 4. After the command finishes, open the `dist` folder in the project. You will find a folder named `HomeStudentExtractor-mac` containing the app bundle. Move it to a convenient location and double-click it to launch.
 
 ## Using the app
@@ -98,4 +110,4 @@ Building creates an application you can keep or share that runs without installi
 - **Validation error about file counts**: The app prevents re-running with the exact same number of files already present in the output folder. Choose a different output folder or empty the existing one.
 - **Build failures**: Ensure Python is installed and the `pip install -r requirements.txt` step completed successfully before running `python build.py`.
 
-Enjoy using the Home Student File Extractor!
+Enjoy using the File Extractor!

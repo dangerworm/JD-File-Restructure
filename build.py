@@ -54,7 +54,14 @@ def build() -> None:
     print("Running:", " ".join(cmd))
     subprocess.check_call(cmd)
 
+    archive_base = DIST_DIR / executable_name
+    archive_path = archive_base.with_suffix(".zip")
+    if archive_path.exists():
+        archive_path.unlink()
+    shutil.make_archive(str(archive_base), "zip", root_dir=DIST_DIR, base_dir=executable_name)
+
     print(f"Build complete. Executable located in: {DIST_DIR / executable_name}")
+    print(f"Zipped bundle created at: {archive_path}")
 
 
 def platform_delimiter() -> str:
